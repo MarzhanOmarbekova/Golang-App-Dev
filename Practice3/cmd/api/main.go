@@ -1,4 +1,4 @@
-package Practice3
+package main
 
 import "Practice3/internal/app"
 

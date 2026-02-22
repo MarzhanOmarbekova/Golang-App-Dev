@@ -6,13 +6,34 @@ import (
 	"time"
 )
 
-func LoggingMiddleware(next http.Handler) http.Handler {
+type responseWriter struct {
+	http.ResponseWriter
+	statusCode int
+}
+
+func newResponseWriter(w http.ResponseWriter) *responseWriter {
+	return &responseWriter{ResponseWriter: w, statusCode: http.StatusOK}
+}
+
+func (rw *responseWriter) WriteHeader(code int) {
+	rw.statusCode = code
+	rw.ResponseWriter.WriteHeader(code)
+}
+
+func Logger(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		log.Printf("[%s] %s %s",
-			time.Now().Format(time.RFC3339),
+		start := time.Now()
+		wrapped := newResponseWriter(w)
+
+		next.ServeHTTP(wrapped, r)
+
+		log.Printf(
+			"[%s] method=%s endpoint=%s status=%d duration=%s",
+			start.Format(time.RFC3339),
 			r.Method,
-			r.RequestURI,
+			r.URL.Path,
+			wrapped.statusCode,
+			time.Since(start),
 		)
-		next.ServeHTTP(w, r)
 	})
 }

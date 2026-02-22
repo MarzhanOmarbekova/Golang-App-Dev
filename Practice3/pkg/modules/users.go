@@ -9,3 +9,15 @@ type User struct {
 	Age       int       `db:"age" json:"age"`
 	CreatedAt time.Time `db:"created_at" json:"created_at"`
 }
+
+type CreateUserRequest struct {
+	Name  string `json:"name"`
+	Email string `json:"email"`
+	Age   int    `json:"age"`
+}
+
+type UpdateUserRequest struct {
+	Name  string `json:"name"`
+	Email string `json:"email"`
+	Age   int    `json:"age"`
+}
