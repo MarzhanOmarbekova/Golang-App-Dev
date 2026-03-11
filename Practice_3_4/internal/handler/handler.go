@@ -11,9 +11,7 @@ type Handler struct {
 }
 
 func NewHandler(usecases *usecase.Usecases) *Handler {
-	return &Handler{
-		usecases: usecases,
-	}
+	return &Handler{usecases: usecases}
 }
 
 func (h *Handler) InitRoutes() *http.ServeMux {
@@ -27,10 +25,23 @@ func (h *Handler) InitRoutes() *http.ServeMux {
 	mux.HandleFunc("PUT /users/{id}", h.UpdateUser)
 	mux.HandleFunc("DELETE /users/{id}", h.DeleteUser)
 
-	// GET /users/paginated?page=1&page_size=5&order_by=name&direction=asc&name=alice&gender=female
+	// PATCH /users/{id}/restore  → undo a soft-delete
+	mux.HandleFunc("PATCH /users/{id}/restore", h.RestoreUser)
+
+	// GET /users/paginated?page=1&page_size=5&order_by=name&direction=asc&status=active
 	mux.HandleFunc("GET /users/paginated", h.GetPaginatedUsers)
+
+	// GET /users/cursor?limit=5&cursor=0&status=active
+	mux.HandleFunc("GET /users/cursor", h.GetCursorPaginatedUsers)
+
 	// GET /users/common-friends?user1=1&user2=2
 	mux.HandleFunc("GET /users/common-friends", h.GetCommonFriends)
+
+	// POST /users/add-friend  body: {"user_id":1,"friend_id":5}
+	mux.HandleFunc("POST /users/add-friend", h.AddFriend)
+
+	// GET /users/recommendations?user_id=1
+	mux.HandleFunc("GET /users/recommendations", h.GetFriendRecommendations)
 
 	return mux
 }

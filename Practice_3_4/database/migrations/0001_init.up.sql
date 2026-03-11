@@ -1,18 +1,21 @@
-create table if not exists users (
-    id serial primary key,
-    name varchar(255) not null,
-    email varchar(255) unique not null,
-    age int not null,
-    gender varchar(10) not null default 'other',
-    birth_date date not null,
-    created_at  timestamp default now()
-);
-create table if not exists user_friends (
-    user_id integer references users(id) on delete cascade,
-    friend_id integer references users(id) on delete cascade,
-    primary key (user_id, friend_id),
-    constraint no_self_friendship check (user_id <> friend_id)
-)
+CREATE TABLE IF NOT EXISTS users (
+    id         SERIAL PRIMARY KEY,
+    name       VARCHAR(255)        NOT NULL,
+    email      VARCHAR(255) UNIQUE NOT NULL,
+    age        INT                 NOT NULL,
+    gender     VARCHAR(10)         NOT NULL DEFAULT 'other',
+    birth_date DATE                NOT NULL DEFAULT '2000-01-01',
+    created_at TIMESTAMP           DEFAULT NOW()
+    );
+
+CREATE TABLE IF NOT EXISTS user_friends (
+                                            user_id   INTEGER REFERENCES users(id) ON DELETE CASCADE,
+    friend_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+    PRIMARY KEY (user_id, friend_id),
+    CONSTRAINT no_self_friendship CHECK (user_id <> friend_id)
+    );
+
+
 INSERT INTO users (name, email, age, gender, birth_date) VALUES
 ('Alice Johnson',   'alice@example.com',   28, 'female', '1996-03-15'),
 ('Bob Smith',       'bob@example.com',     32, 'male',   '1992-07-22'),
@@ -34,37 +37,34 @@ INSERT INTO users (name, email, age, gender, birth_date) VALUES
 ('Rachel Hall',     'rachel@example.com',  34, 'female', '1990-06-04'),
 ('Sam Young',       'sam@example.com',     37, 'male',   '1987-04-19'),
 ('Tina Allen',      'tina@example.com',    20, 'female', '2004-08-31')
-ON CONFLICT DO NOTHING;
+    ON CONFLICT DO NOTHING;
 
--- Alice's friends: Bob, Carol, David, Eva, Frank, Grace
 INSERT INTO user_friends (user_id, friend_id) VALUES
-(1,2),(2,1),
-(1,3),(3,1),
-(1,4),(4,1),
-(1,5),(5,1),
-(1,6),(6,1),
-(1,7),(7,1);
+                                                  (1,2),(2,1),
+                                                  (1,3),(3,1),
+                                                  (1,4),(4,1),
+                                                  (1,5),(5,1),
+                                                  (1,6),(6,1),
+                                                  (1,7),(7,1);
 
--- Bob's friends: Alice(already above), Carol, David, Eva, Frank, Henry
 INSERT INTO user_friends (user_id, friend_id) VALUES
-(2,3),(3,2),
-(2,4),(4,2),
-(2,5),(5,2),
-(2,6),(6,2),
-(2,8),(8,2);
+                                                  (2,3),(3,2),
+                                                  (2,4),(4,2),
+                                                  (2,5),(5,2),
+                                                  (2,6),(6,2),
+                                                  (2,8),(8,2);
 
--- Extra friendships
 INSERT INTO user_friends (user_id, friend_id) VALUES
-(3,9),(9,3),
-(4,10),(10,4),
-(5,11),(11,5),
-(6,12),(12,6),
-(7,13),(13,7),
-(8,14),(14,8),
-(9,15),(15,9),
-(10,16),(16,10),
-(11,17),(17,11),
-(12,18),(18,12),
-(13,19),(19,13),
-(14,20),(20,14)
-ON CONFLICT DO NOTHING;
+                                                  (3,9),(9,3),
+                                                  (4,10),(10,4),
+                                                  (5,11),(11,5),
+                                                  (6,12),(12,6),
+                                                  (7,13),(13,7),
+                                                  (8,14),(14,8),
+                                                  (9,15),(15,9),
+                                                  (10,16),(16,10),
+                                                  (11,17),(17,11),
+                                                  (12,18),(18,12),
+                                                  (13,19),(19,13),
+                                                  (14,20),(20,14)
+    ON CONFLICT DO NOTHING;

@@ -17,10 +17,11 @@ func Auth(next http.Handler) http.Handler {
 		if apiKey == "" || apiKey != ValidAPIKey {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusUnauthorized)
-			json.NewEncoder(w).Encode(map[string]string{"error": "unauthorized: missing or invalid X-API-KEY header"})
+			json.NewEncoder(w).Encode(map[string]string{
+				"error": "unauthorized: missing or invalid X-API-KEY header",
+			})
 			return
 		}
-
 		next.ServeHTTP(w, r)
 	})
 }

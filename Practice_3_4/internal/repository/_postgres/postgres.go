@@ -21,19 +21,16 @@ func NewPGXDialect(ctx context.Context, cfg *modules.PostgreConfig) *Dialect {
 		cfg.Host, cfg.Port, cfg.Username, cfg.Password, cfg.DBName, cfg.SSLMode)
 
 	db, err := sqlx.Connect("postgres", dsn)
+	if err != nil {
+		panic(err)
+	}
+	if err = db.Ping(); err != nil {
+		panic(err)
+	}
 
-	if err != nil {
-		panic(err)
-	}
-	err = db.Ping()
-	if err != nil {
-		panic(err)
-	}
 	AutoMigrate(cfg)
 
-	return &Dialect{
-		DB: db,
-	}
+	return &Dialect{DB: db}
 }
 
 func AutoMigrate(cfg *modules.PostgreConfig) {
@@ -42,14 +39,11 @@ func AutoMigrate(cfg *modules.PostgreConfig) {
 		cfg.Username, cfg.Password, cfg.Host, cfg.Port, cfg.DBName, cfg.SSLMode)
 
 	m, err := migrate.New(sourceURL, databaseURL)
-
 	if err != nil {
 		panic(err)
 	}
 
-	err = m.Up()
-
-	if err != nil && err != migrate.ErrNoChange {
+	if err = m.Up(); err != nil && err != migrate.ErrNoChange {
 		panic(err)
 	}
 }
