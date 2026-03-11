@@ -21,9 +21,9 @@ func Run() {
 	// DB config from ENV
 	dbConfig := initPostgreConfig()
 
-	_postgre := _postgres.NewPGXDialect(ctx, dbConfig)
+	pg := _postgres.NewPGXDialect(ctx, dbConfig)
 
-	repositories := repository.NewRepositories(_postgre)
+	repositories := repository.NewRepositories(pg)
 	usecases := usecase.NewUsecases(repositories)
 	h := handler.NewHandler(usecases)
 
@@ -51,7 +51,6 @@ func Run() {
 
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, os.Interrupt)
-
 	<-quit
 	log.Println("Shutting down gracefully...")
 
@@ -62,7 +61,7 @@ func Run() {
 		log.Printf("Server Shutdown Failed: %+v", err)
 	}
 
-	_postgre.DB.Close()
+	pg.DB.Close()
 	log.Println("Server exited properly")
 }
 

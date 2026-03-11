@@ -32,3 +32,15 @@ func (u *userUsecase) UpdateUser(id int, req modules.UpdateUserRequest) error {
 func (u *userUsecase) DeleteUser(id int) (int64, error) {
 	return u.repo.DeleteUser(id)
 }
+
+func (u *userUsecase) GetPaginatedUsers(
+	page, pageSize int,
+	filter modules.UserFilter,
+	sort modules.UserSort,
+) (modules.PaginatedResponse, error) {
+	return u.repo.GetPaginatedUsers(page, pageSize, filter, sort)
+}
+
+func (u *userUsecase) GetCommonFriends(user1ID, user2ID int) ([]modules.User, error) {
+	return u.repo.GetCommonFriends(user1ID, user2ID)
+}

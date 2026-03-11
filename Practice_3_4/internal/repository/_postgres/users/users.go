@@ -4,8 +4,19 @@ import (
 	"Practice3/internal/repository/_postgres"
 	"Practice3/pkg/modules"
 	"fmt"
+	"strings"
 	"time"
 )
+
+var allowedColumns = map[string]bool{
+	"id":         true,
+	"name":       true,
+	"email":      true,
+	"gender":     true,
+	"birth_date": true,
+	"age":        true,
+	"created_at": true,
+}
 
 type Repository struct {
 	db               *_postgres.Dialect
@@ -86,4 +97,134 @@ func (r *Repository) DeleteUser(id int) (int64, error) {
 		return 0, fmt.Errorf("DeleteUser: user with id=%d does not exist", id)
 	}
 	return rowsAffected, nil
+}
+
+func (r *Repository) GetPaginatedUsers(
+	page, pageSize int,
+	filter modules.UserFilter,
+	sort modules.UserSort,
+) (modules.PaginatedResponse, error) {
+
+	args := []interface{}{}
+	conditions := []string{}
+	argIdx := 1
+
+	if filter.ID != nil {
+		conditions = append(conditions, fmt.Sprintf("id = $%d", argIdx))
+		args = append(args, *filter.ID)
+		argIdx++
+	}
+	if filter.Name != nil {
+		conditions = append(conditions, fmt.Sprintf("name ILIKE $%d", argIdx))
+		args = append(args, "%"+*filter.Name+"%")
+		argIdx++
+	}
+	if filter.Email != nil {
+		conditions = append(conditions, fmt.Sprintf("email ILIKE $%d", argIdx))
+		args = append(args, "%"+*filter.Email+"%")
+		argIdx++
+	}
+	if filter.Gender != nil {
+		conditions = append(conditions, fmt.Sprintf("gender = $%d", argIdx))
+		args = append(args, *filter.Gender)
+		argIdx++
+	}
+	if filter.BirthDate != nil {
+		conditions = append(conditions, fmt.Sprintf("birth_date = $%d", argIdx))
+		args = append(args, *filter.BirthDate)
+		argIdx++
+	}
+
+	whereClause := ""
+	if len(conditions) > 0 {
+		whereClause = "WHERE " + strings.Join(conditions, " AND ")
+	}
+
+	orderBy := "id ASC"
+	if sort.Column != "" {
+		if !allowedColumns[sort.Column] {
+			return modules.PaginatedResponse{}, fmt.Errorf("invalid sort column: %s", sort.Column)
+		}
+		dir := "ASC"
+		if strings.ToUpper(sort.Direction) == "DESC" {
+			dir = "DESC"
+		}
+		orderBy = fmt.Sprintf("%s %s", sort.Column, dir)
+	}
+
+	countQuery := fmt.Sprintf("SELECT COUNT(*) FROM users %s", whereClause)
+	var totalCount int
+	if err := r.db.DB.QueryRow(countQuery, args...).Scan(&totalCount); err != nil {
+		return modules.PaginatedResponse{}, fmt.Errorf("GetPaginatedUsers count: %w", err)
+	}
+
+	offset := (page - 1) * pageSize
+
+	limitArg := argIdx
+	offsetArg := argIdx + 1
+
+	dataQuery := fmt.Sprintf(
+		`SELECT id, name, email, age, gender, birth_date, created_at
+		   FROM users
+		  %s
+		  ORDER BY %s
+		  LIMIT $%d OFFSET $%d`,
+		whereClause, orderBy, limitArg, offsetArg,
+	)
+	dataArgs := append(args, pageSize, offset)
+
+	rows, err := r.db.DB.Query(dataQuery, dataArgs...)
+	if err != nil {
+		return modules.PaginatedResponse{}, fmt.Errorf("GetPaginatedUsers query: %w", err)
+	}
+	defer rows.Close()
+
+	var usersList []modules.User
+	for rows.Next() {
+		var u modules.User
+		if err := rows.Scan(
+			&u.ID, &u.Name, &u.Email, &u.Age,
+			&u.Gender, &u.BirthDate, &u.CreatedAt,
+		); err != nil {
+			return modules.PaginatedResponse{}, fmt.Errorf("GetPaginatedUsers scan: %w", err)
+		}
+		usersList = append(usersList, u)
+	}
+
+	return modules.PaginatedResponse{
+		Data:       usersList,
+		TotalCount: totalCount,
+		Page:       page,
+		PageSize:   pageSize,
+	}, nil
+}
+
+func (r *Repository) GetCommonFriends(user1ID, user2ID int) ([]modules.User, error) {
+	query := `
+		SELECT u.id, u.name, u.email, u.age, u.gender, u.birth_date, u.created_at
+		  FROM user_friends uf1
+		  JOIN user_friends uf2 ON uf1.friend_id = uf2.friend_id
+		  JOIN users u          ON u.id = uf1.friend_id
+		 WHERE uf1.user_id = $1
+		   AND uf2.user_id = $2
+		 ORDER BY u.id`
+
+	rows, err := r.db.DB.Query(query, user1ID, user2ID)
+	if err != nil {
+		return nil, fmt.Errorf("GetCommonFriends query: %w", err)
+	}
+	defer rows.Close()
+
+	var result []modules.User
+	for rows.Next() {
+		var u modules.User
+		if err := rows.Scan(
+			&u.ID, &u.Name, &u.Email, &u.Age,
+			&u.Gender, &u.BirthDate, &u.CreatedAt,
+		); err != nil {
+			return nil, fmt.Errorf("GetCommonFriends scan: %w", err)
+		}
+		result = append(result, u)
+	}
+	return result, nil
 }

@@ -27,6 +27,11 @@ func (h *Handler) InitRoutes() *http.ServeMux {
 	mux.HandleFunc("PUT /users/{id}", h.UpdateUser)
 	mux.HandleFunc("DELETE /users/{id}", h.DeleteUser)
 
+	// GET /users/paginated?page=1&page_size=5&order_by=name&direction=asc&name=alice&gender=female
+	mux.HandleFunc("GET /users/paginated", h.GetPaginatedUsers)
+	// GET /users/common-friends?user1=1&user2=2
+	mux.HandleFunc("GET /users/common-friends", h.GetCommonFriends)
+
 	return mux
 }
 
